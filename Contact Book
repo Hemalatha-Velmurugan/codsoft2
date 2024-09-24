@@ -1,0 +1,148 @@
+import tkinter as tk
+from tkinter import messagebox, simpledialog
+import json
+import os
+
+# Main Contact Manager class
+class ContactManager:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Contact Manager")
+        self.root.geometry("600x400")
+        self.root.config(bg="#f5f6fa")
+
+        # Contact Data - Load existing or create new contacts
+        self.contact_file = "contacts.json"
+        self.contacts = self.load_contacts()
+
+        # Title Label
+        self.title_label = tk.Label(self.root, text="Contact Manager", font=("Helvetica", 20, "bold"), bg="#f5f6fa", fg="#2f3640")
+        self.title_label.pack(pady=20)
+
+        # Buttons Frame
+        self.button_frame = tk.Frame(self.root, bg="#f5f6fa")
+        self.button_frame.pack(pady=20)
+
+        # Add Contact Button
+        self.add_contact_btn = tk.Button(self.button_frame, text="Add Contact", width=15, font=("Helvetica", 14), bg="#44bd32", fg="white", command=self.add_contact)
+        self.add_contact_btn.grid(row=0, column=0, padx=10)
+
+        # View Contact List Button
+        self.view_contact_btn = tk.Button(self.button_frame, text="View Contacts", width=15, font=("Helvetica", 14), bg="#00a8ff", fg="white", command=self.view_contacts)
+        self.view_contact_btn.grid(row=0, column=1, padx=10)
+
+        # Search Contact Button
+        self.search_contact_btn = tk.Button(self.button_frame, text="Search Contact", width=15, font=("Helvetica", 14), bg="#8c7ae6", fg="white", command=self.search_contact)
+        self.search_contact_btn.grid(row=0, column=2, padx=10)
+
+        # Update Contact Button
+        self.update_contact_btn = tk.Button(self.button_frame, text="Update Contact", width=15, font=("Helvetica", 14), bg="#fbc531", fg="white", command=self.update_contact)
+        self.update_contact_btn.grid(row=1, column=0, padx=10, pady=10)
+
+        # Delete Contact Button
+        self.delete_contact_btn = tk.Button(self.button_frame, text="Delete Contact", width=15, font=("Helvetica", 14), bg="#e84118", fg="white", command=self.delete_contact)
+        self.delete_contact_btn.grid(row=1, column=1, padx=10, pady=10)
+
+        # Exit Button
+        self.exit_btn = tk.Button(self.button_frame, text="Exit", width=15, font=("Helvetica", 14), bg="#dcdde1", fg="black", command=self.root.quit)
+        self.exit_btn.grid(row=1, column=2, padx=10, pady=10)
+
+        # Message Label
+        self.message_label = tk.Label(self.root, text="", font=("Helvetica", 12, "italic"), bg="#f5f6fa", fg="#2f3640")
+        self.message_label.pack(pady=10)
+
+    # Load contacts from the JSON file
+    def load_contacts(self):
+        if os.path.exists(self.contact_file):
+            with open(self.contact_file, "r") as file:
+                return json.load(file)
+        return {}
+
+    # Save contacts to the JSON file
+    def save_contacts(self):
+        with open(self.contact_file, "w") as file:
+            json.dump(self.contacts, file, indent=4)
+
+    # Add a new contact
+    def add_contact(self):
+        name = simpledialog.askstring("Name", "Enter Contact Name:")
+        if name in self.contacts:
+            messagebox.showerror("Error", "Contact already exists!")
+            return
+
+        phone = simpledialog.askstring("Phone Number", "Enter Phone Number:")
+        email = simpledialog.askstring("Email", "Enter Email Address:")
+        address = simpledialog.askstring("Address", "Enter Address:")
+
+        if name and phone:
+            self.contacts[name] = {"phone": phone, "email": email, "address": address}
+            self.save_contacts()
+            self.message_label.config(text=f"Contact '{name}' added successfully!", fg="#44bd32")
+        else:
+            messagebox.showerror("Error", "Name and Phone are required!")
+
+    # View all contacts
+    def view_contacts(self):
+        if not self.contacts:
+            messagebox.showinfo("Contacts", "No contacts found.")
+            return
+
+        contact_list = ""
+        for name, details in self.contacts.items():
+            contact_list += f"Name: {name}, Phone: {details['phone']}\n"
+
+        messagebox.showinfo("Contact List", contact_list)
+
+    # Search for a contact
+    def search_contact(self):
+        search_query = simpledialog.askstring("Search", "Enter Name or Phone Number:")
+        if not search_query:
+            return
+
+        result = ""
+        for name, details in self.contacts.items():
+            if search_query.lower() in name.lower() or search_query == details["phone"]:
+                result += f"Name: {name}, Phone: {details['phone']}, Email: {details['email']}, Address: {details['address']}\n"
+
+        if result:
+            messagebox.showinfo("Search Result", result)
+        else:
+            messagebox.showinfo("Search Result", "No contact found.")
+
+    # Update an existing contact
+    def update_contact(self):
+        name = simpledialog.askstring("Name", "Enter the name of the contact to update:")
+        if name not in self.contacts:
+            messagebox.showerror("Error", "Contact not found!")
+            return
+
+        new_phone = simpledialog.askstring("Phone Number", f"Enter new phone number (Current: {self.contacts[name]['phone']}):")
+        new_email = simpledialog.askstring("Email", f"Enter new email address (Current: {self.contacts[name]['email']}):")
+        new_address = simpledialog.askstring("Address", f"Enter new address (Current: {self.contacts[name]['address']}):")
+
+        if new_phone:
+            self.contacts[name]["phone"] = new_phone
+        if new_email:
+            self.contacts[name]["email"] = new_email
+        if new_address:
+            self.contacts[name]["address"] = new_address
+
+        self.save_contacts()
+        self.message_label.config(text=f"Contact '{name}' updated successfully!", fg="#fbc531")
+
+    # Delete a contact
+    def delete_contact(self):
+        name = simpledialog.askstring("Name", "Enter the name of the contact to delete:")
+        if name not in self.contacts:
+            messagebox.showerror("Error", "Contact not found!")
+            return
+
+        del self.contacts[name]
+        self.save_contacts()
+        self.message_label.config(text=f"Contact '{name}' deleted successfully!", fg="#e84118")
+
+# Main application entry
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = ContactManager(root)
+    root.mainloop()
